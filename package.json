@@ -59,8 +59,7 @@
         }
       ],
       "icon": "assets/app-icon.ico",
-      "requestedExecutionLevel": "asInvoker",
-      "publisherName": "Connor Masini"
+      "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
       "oneClick": false,

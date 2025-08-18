@@ -17,18 +17,13 @@ files:
       - '!pydist/**'
       - '!*.spec'
       - '!requirements.txt'
-extraFiles:
+extraResources:
   - from: pydist/report-backend.exe
     to: backend/report-backend.exe
-    filter:
-      - '**/*'
-extraResources:
   - from: assets
     to: assets
   - from: user.settings
     to: user.settings
-asarUnpack:
-  - backend/**
 win:
   target:
     - target: nsis
@@ -50,4 +45,9 @@ nsis:
   deleteAppDataOnUninstall: false
   runAfterFinish: true
   menuCategory: Education
+publish:
+  provider: github
+  owner: cjmasini
+  repo: GradeReportGenerator
+  private: false
 electronVersion: 31.7.7

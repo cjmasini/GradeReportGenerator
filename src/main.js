@@ -18,7 +18,14 @@ app.whenReady().then(() => {
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
-app.on('before-quit', () => { for (const f of tempFiles) safeUnlink(f); });
+app.on('before-quit', (event) => {
+  for (const f of tempFiles) safeUnlink(f);
+  
+  if (autoUpdater.quitAndInstall) {
+    console.log('[updater] Installing update on quit...');
+    autoUpdater.quitAndInstall(false, true);
+  }
+});
 
 process.on('exit', () => { for (const f of tempFiles) safeUnlink(f); });
 process.on('SIGINT', () => { for (const f of tempFiles) safeUnlink(f); process.exit(0); });
@@ -503,7 +510,7 @@ autoUpdater.on('download-progress', (progressObj) => {
 
 autoUpdater.on('update-downloaded', (info) => {
   console.log('[updater] Update downloaded:', info.version);
-  autoUpdater.quitAndInstall();
+  console.log('[updater] Update will be installed when app is closed');
 });
 
 
