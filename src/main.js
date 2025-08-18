@@ -137,28 +137,23 @@ function seedDefaultSettings() {
 function resolveBackendExecutable() {
   const candidates = [
     path.join(path.dirname(app.getPath('exe')), 'backend', 'report-backend.exe'),
+    path.join(process.resourcesPath, 'backend', 'report-backend.exe'),
     path.join(app.getAppPath(), 'pydist', 'report-backend.exe'),
   ];
   
+  console.log('[main] === Backend Executable Resolution ===');
+  console.log('[main] app.getPath("exe"):', app.getPath('exe'));
+  console.log('[main] dirname of exe:', path.dirname(app.getPath('exe')));
+  
   for (const p of candidates) {
-    try { 
-      console.log('[main] Checking path:', p);
-      if (fs.existsSync(p)) {
-        try {
-          fs.accessSync(p, fs.constants.F_OK | fs.constants.X_OK);
-          return p;
-        } catch (accessErr) {
-          console.warn('[main] File exists but not executable:', p, accessErr.message);
-        }
-      } else {
-        console.warn('[main] Not found at:', p);
-      }
-    } catch (err) {
-      console.warn('[main] Error checking backend path:', p, err.message);
+    console.log('[main] Checking path:', p);
+    if (fs.existsSync(p)) {
+      console.log('[main] ✅ Found backend executable at:', p);
+      return p;
     }
   }
-
-  console.error('[main] CRITICAL: Backend executable not found! App cannot function without it.');
+  
+  console.error('[main] Backend executable not found');
   return null;
 }
 

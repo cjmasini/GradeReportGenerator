@@ -1,6 +1,6 @@
 {
   "name": "grade-report-generator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "src/main.js",
   "author": "Connor Masini",
   "homepage": "https://github.com/cjmasini/GradeReportGenerator",
