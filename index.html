@@ -1,0 +1,371 @@
+<!-- index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Grade Report Generator</title>
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' https://cdn.tailwindcss.com;
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: blob: file:;
+    object-src 'none';
+    base-uri 'none';
+    frame-ancestors 'none';
+  ">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="h-screen bg-slate-50 text-slate-900">
+  <div class="h-full grid grid-cols-[360px_1fr] gap-0">
+    <!-- Left pane -->
+    <aside class="border-r border-slate-200 bg-white p-6 flex flex-col gap-6">
+      <div class="flex items-center gap-3">
+        <img id="schoolLogo"
+            src="./assets/logo.png"
+            alt="School logo"
+            class="w-10 h-10 rounded-xl object-cover ring-1 ring-slate-200" />
+        <div class="flex items-center gap-2">
+          <div class="min-w-0">
+            <div class="font-semibold leading-tight">Report Generator</div>
+            <div class="text-xs text-slate-500 truncate" id="schoolName">Western International HS</div>
+          </div>
+
+          <!-- Future: upload custom logo -->
+          <button id="btnEditLogo"
+                  class="ml-2 text-xs px-2 py-1 rounded-lg border border-slate-300 hover:bg-slate-50">
+            Edit
+          </button>
+        </div>
+      </div>
+
+<div class="space-y-4">
+  <div class="text-sm font-medium">Scoresheet</div>
+
+  <!-- wrapper so the help button can be positioned over the picker -->
+  <div class="relative">
+    <!-- keep ID and markup exactly as your app expects -->
+    <button id="btnPick"
+            class="w-full rounded-xl border-2 border-dashed border-indigo-400
+                   bg-indigo-50 hover:bg-indigo-100 px-4 py-3 pr-12
+                   text-left text-indigo-700 font-medium animate-pulse">
+      Select a scoresheet…
+    </button>
+
+    <!-- separate sibling: won’t be wiped by innerHTML changes -->
+    <button id="btnScoreHelp" type="button" title="How to get your scoresheet"
+            class="absolute right-2 top-1/2 -translate-y-1/2 z-10
+                   h-9 w-9 grid place-items-center rounded-full
+                   bg-white/90 text-indigo-700 ring-1 ring-indigo-300 shadow-sm
+                   hover:bg-indigo-50 hover:ring-indigo-400 focus:outline-none
+                   focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400">
+      <span class="font-bold text-lg leading-none">?</span>
+    </button>
+  </div>
+
+  <div id="fileLabel" class="text-xs text-slate-500 break-all">No file selected</div>
+</div>
+
+
+      <div class="space-y-3">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-lg font-semibold">Defaults</h2>
+          <button id="btnSaveDefaults"
+                  class="px-3 py-1 rounded-lg bg-gradient-to-r from-fuchsia-500 to-indigo-600 text-white text-sm font-medium shadow-sm hover:shadow-md hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-fuchsia-300 transition">
+            Save
+          </button>
+        </div>
+        <label class="block text-xs text-slate-600">Class Name
+          <input id="className" class="w-full mt-1 rounded-lg border border-slate-300 px-3 py-2" placeholder="AP Precalculus">
+        </label>
+        <label class="block text-xs text-slate-600">Teacher Name
+          <input id="teacherName" class="w-full mt-1 rounded-lg border border-slate-300 px-3 py-2">
+        </label>
+        <label class="block text-xs text-slate-600">Teacher Email
+          <input id="teacherEmail" class="w-full mt-1 rounded-lg border border-slate-300 px-3 py-2">
+        </label>
+        <div class="space-y-2">
+        <label class="block text-xs text-slate-600">Custom Message (optional)
+          <textarea id="customMessage" rows="4" class="w-full mt-1 rounded-lg border border-slate-300 px-3 py-2"></textarea>
+        </label>
+      </div>
+
+      <div class="mt-auto">
+        <div class="text-xs text-slate-500" id="status">Status: Ready</div>
+        <div class="w-full h-2 bg-slate-200 rounded mt-2 overflow-hidden">
+          <div id="progressBar" class="h-2 w-0 bg-blue-600 transition-all"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right pane -->
+    <main class="p-6 flex flex-col min-h-0">
+      <div class="flex items-center justify-between gap-3">
+        <div class="text-lg font-semibold">Preview & Selection</div>
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-slate-600">
+              Language:
+              <select id="defaultLang" class="ml-1 rounded-lg border border-slate-300 px-2 py-1 text-sm">
+                <option value="en">English</option>
+                <option value="es">Spanish</option>
+                <option value="ar">Arabic</option>
+              </select>
+            </label>
+            <button id="btnApplyAllLang" class="rounded-lg bg-slate-200 hover:bg-slate-300 px-2 py-1 text-xs">
+              Apply All
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-slate-600">
+              Grade &le;
+              <input id="gradeCutoff" type="text" class="ml-1 w-16 rounded-lg border border-slate-300 px-2 py-1 text-sm">
+            </label>
+            <button id="btnApplyGradeFilter" class="rounded-lg bg-slate-200 hover:bg-slate-300 px-2 py-1 text-xs">
+              Apply
+            </button>
+            <span id="gradeCutoffError" class="text-red-500 text-xs hidden">Invalid number</span>
+          </div>
+          <label class="text-sm flex items-center gap-2">
+            <input id="selectAll" type="checkbox" class="h-4 w-4"> Toggle All
+          </label>
+          <button id="btnGenerateSelected" disabled class="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            Generate Selected
+          </button>
+
+        </div>
+      </div>
+
+       <div class="mt-4 border rounded-xl bg-white flex-1 min-h-0 overflow-hidden">
+        <div class="h-full overflow-y-auto">
+        <table class="w-full text-sm table-fixed overflow-hidden">
+        <colgroup>
+          <col class="w-12" />  <!-- checkbox -->
+          <col />                        <!-- Name (fills remaining) -->
+          <col class="w-24" />    <!-- % -->
+          <col class="w-24" />    <!-- Grade -->
+          <col class="w-40" />   <!-- Language -->
+        </colgroup>
+
+          <thead class="bg-slate-50 sticky top-0 z-10">
+            <tr class="text-left">
+              <!-- Selected -->
+              <th id="thSel" class="p-3 cursor-pointer select-none group">
+                <div class="flex items-center gap-1">
+                  <span data-arrow="selected" class="inline-block w-3 text-slate-400"></span>
+                  <span data-hover="selected" class="inline-block w-3 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none">↕</span>
+                </div>
+              </th>
+
+              <!-- Name -->
+              <th id="thName" data-sort="name" class="p-3 cursor-pointer select-none group whitespace-nowrap">
+                <span class="inline-flex items-center gap-1">
+                  Name
+                  <span data-arrow="name" class="inline-block w-4 text-slate-400"></span>
+                  <span data-hover="name" class="inline-block w-4 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none">↕</span>
+                </span>
+              </th>
+
+              <!-- % -->
+              <th id="thPct" data-sort="percent"
+                  class="p-3 cursor-pointer select-none group whitespace-nowrap text-right relative">
+                <!-- right-align %; reserve space for the overlaid arrow with pr-5 -->
+                <span class="pr-5 tabular-nums">%</span>
+
+                <!-- overlay the active ▲/▼ -->
+                <span data-arrow="percent"
+                      class="absolute inset-y-0 right-2 flex w-4 items-center justify-center text-slate-400"></span>
+
+                <!-- overlay the hover ↕ (only shows on hover for non-active column) -->
+                <span data-hover="percent"
+                      class="absolute inset-y-0 right-2 flex w-4 items-center justify-center text-slate-300
+                            opacity-0 group-hover:opacity-100 pointer-events-none">↕</span>
+              </th>
+
+              <!-- Grade -->
+              <th id="thGrade" data-sort="grade"
+                  class="p-3 cursor-pointer select-none group whitespace-nowrap text-center relative">
+                <!-- center the label; reserve arrow space on the right -->
+                <span class="pr-5">Grade</span>
+
+                <!-- active ▲/▼, overlaid -->
+                <span data-arrow="grade"
+                      class="absolute inset-y-0 right-2 flex w-4 items-center justify-center text-slate-400"></span>
+
+                <!-- hover ↕, overlaid -->
+                <span data-hover="grade"
+                      class="absolute inset-y-0 right-2 flex w-4 items-center justify-center text-slate-300
+                            opacity-0 group-hover:opacity-100 pointer-events-none">↕</span>
+              </th>
+
+              <!-- Language -->
+              <th id="thLang" data-sort="language" class="p-3 cursor-pointer select-none group whitespace-nowrap">
+                <span class="inline-flex items-center gap-1">
+                  Language
+                  <span data-arrow="language" class="inline-block w-4 text-slate-400"></span>
+                  <span data-hover="language" class="inline-block w-4 text-slate-300 opacity-0 group-hover:opacity-100 pointer-events-none">↕</span>
+                </span>
+              </th>
+
+            </tr>
+          </thead>
+          <tbody id="studentsBody"></tbody>
+        </table>
+        <div id="noData" class="p-6 text-center text-slate-500">Select a file to load students.</div>
+      </div>
+      </div>
+    </main>
+  </div>
+
+  <script defer src="./src/renderer.js"></script>
+
+  <div id="editModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+  <div class="relative mx-auto mt-24 w-[36rem] rounded-2xl bg-white shadow-xl p-6">
+    <div class="flex items-start justify-between mb-4">
+      <h2 class="text-lg font-semibold">School details</h2>
+      <button id="btnCloseModal" class="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100">✕</button>
+    </div>
+
+    <div class="flex items-center gap-4 mb-6">
+      <img id="editLogoPreview" class="w-16 h-16 rounded-xl object-cover ring-1 ring-slate-200" alt="Logo preview">
+      <div>
+        <button id="btnUploadLogo" class="rounded-lg border px-3 py-1 text-sm hover:bg-slate-50">Upload logo…</button>
+        <p class="text-xs text-slate-500 mt-1">PNG/JPG/WebP/SVG. Square looks best.</p>
+      </div>
+    </div>
+
+    <label class="block text-sm font-medium mb-1">School name</label>
+    <input id="editSchoolName" class="w-full rounded-lg border px-3 py-2 mb-4" placeholder="School name">
+
+    <label class="block text-sm font-medium mb-1">School address</label>
+    <textarea id="editSchoolAddress" rows="3" class="w-full rounded-lg border px-3 py-2"></textarea>
+
+    <div class="mt-6 flex justify-end gap-2">
+      <button id="btnCancelEdit" class="rounded-lg border px-3 py-2 hover:bg-slate-50">Cancel</button>
+      <button id="btnSaveEdit" class="rounded-lg bg-slate-900 text-white px-4 py-2 hover:bg-slate-800">Save</button>
+    </div>
+  </div>
+</div>
+<div id="scoresheetHelpModal" class="fixed inset-0 z-[60] hidden">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+
+  <!-- Modal shell -->
+  <div class="relative mx-auto mt-[4vh] h-[92vh] w-[min(1100px,95vw)] rounded-2xl bg-white shadow-2xl overflow-hidden flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <div class="flex items-center gap-3">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-600 text-white font-bold">?</span>
+        <h2 class="text-lg font-semibold">How to get your Scoresheet file</h2>
+      </div>
+      <button id="helpClose" class="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100">✕</button>
+    </div>
+
+    <!-- Slides area -->
+    <div class="relative flex-1 bg-slate-50">
+      <!-- Left / Right arrows -->
+      <button id="helpPrev"
+              class="absolute left-3 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 shadow-md ring-1 ring-slate-200 hover:bg-white focus:outline-none flex items-center justify-center">
+        <svg viewBox="0 0 24 24" class="w-7 h-7 text-indigo-700" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <button id="helpNext"
+              class="absolute right-3 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 shadow-md ring-1 ring-slate-200 hover:bg-white focus:outline-none flex items-center justify-center">
+        <svg viewBox="0 0 24 24" class="w-7 h-7 text-indigo-700" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <!-- Slides (top instructions + big image) -->
+      <div id="helpSlides" class="h-full">
+      <!-- Slide 1 -->
+      <section class="help-slide h-full w-full flex flex-col">
+        <div class="px-6 py-4 bg-white border-b">
+          <h3 class="font-medium">1) Open PowerTeacher Pro → <span class="text-indigo-700">Reports</span> → <b>Scoresheet Report</b></h3>
+          <p class="text-sm text-slate-600">Open reports from the class you are making the report for</p>
+        </div>
+        <div class="flex-1 flex items-center justify-center p-4">
+          <div class="pb-6">
+            <img
+              src="./assets/help/help1.png"
+              class="max-h-[50vh] max-w-full object-contain mx-auto rounded-lg shadow-lg"
+              alt="Open Scoresheet Report"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 2 -->
+      <section class="help-slide h-full w-full flex flex-col">
+        <div class="px-6 py-4 bg-white border-b">
+          <h3 class="font-medium">2) Criteria → Fill out Report Title → Select a class and term</h3>
+          <p class="text-sm text-slate-600">Make sure to select a quarter, not a semester</p>
+        </div>
+        <div class="flex-1 flex items-center justify-center p-4">
+          <div class="pb-6">
+            <img
+              src="./assets/help/image2.5.png"
+              class="max-h-[60vh] max-w-full object-contain mx-auto rounded-lg shadow-lg"
+              alt="Open Scoresheet Report"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 3 -->
+      <section class="help-slide h-full w-full flex flex-col">
+        <div class="px-6 py-4 bg-white border-b">
+          <h3 class="font-medium">3) Format → Output: Excel → Run Report</h3>
+        </div>
+        <div class="flex-1 flex items-center justify-center p-4">
+          <div class="pb-6">
+            <img
+              src="./assets/help/help2.png"
+              class="max-h-[60vh] max-w-full object-contain mx-auto rounded-lg shadow-lg"
+              alt="Open Scoresheet Report"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 4 -->
+      <section class="help-slide h-full w-full flex flex-col">
+        <div class="px-6 py-4 bg-white border-b">
+          <h3 class="font-medium">4) Click on report queue icon → Open Report Queue</h3>
+        </div>
+        <div class="flex-1 flex items-center justify-center p-4">
+          <div class="pb-6">
+            <img
+              src="./assets/help/help3.png"
+              class="max-h-[60vh] max-w-full object-contain mx-auto rounded-lg shadow-lg"
+              alt="Open Scoresheet Report"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Slide 5 -->
+      <section class="help-slide h-full w-full flex flex-col">
+        <div class="px-6 py-4 bg-white border-b">
+          <h3 class="font-medium">5) Download Report</h3>
+          <p class="text-sm text-slate-600">Click on report name to downloads</p>
+        </div>
+        <div class="flex-1 flex items-center justify-center p-4">
+          <div class="pb-6">
+            <img
+              src="./assets/help/help4.png"
+              class="max-h-[40vh] max-w-full object-contain mx-auto rounded-lg shadow-lg"
+              alt="Open Scoresheet Report"
+            />
+          </div>
+        </div>
+      </section>
+
+        <!-- (Add more .help-slide sections as needed) -->
+      </div>
+
+      <!-- Dots -->
+      <div id="helpDots" class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2"></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

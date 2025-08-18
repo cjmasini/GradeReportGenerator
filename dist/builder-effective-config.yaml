@@ -1,0 +1,53 @@
+directories:
+  output: dist
+  buildResources: build
+appId: com.wihs.reportgenerator
+productName: Grade Report Generator
+files:
+  - filter:
+      - index.html
+      - src/main.js
+      - src/preload.js
+      - src/renderer.js
+      - src/**
+      - assets/**
+      - '!backend/**'
+      - '!.venv/**'
+      - '!build-py/**'
+      - '!pydist/**'
+      - '!*.spec'
+      - '!requirements.txt'
+extraFiles:
+  - from: pydist/report-backend.exe
+    to: backend/report-backend.exe
+    filter:
+      - '**/*'
+extraResources:
+  - from: assets
+    to: assets
+  - from: user.settings
+    to: user.settings
+asarUnpack:
+  - backend/**
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/app-icon.ico
+  requestedExecutionLevel: asInvoker
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Grade Report Generator
+  installerIcon: assets/app-icon.ico
+  uninstallerIcon: assets/app-icon.ico
+  installerHeaderIcon: assets/app-icon.ico
+  deleteAppDataOnUninstall: false
+  runAfterFinish: true
+  menuCategory: Education
+electronVersion: 31.7.7
