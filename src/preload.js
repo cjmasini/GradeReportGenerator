@@ -2,8 +2,10 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-  selectFile: () => ipcRenderer.invoke('select-file'),
-  listStudents: (payload) => ipcRenderer.invoke('list-students', payload),
+  selectFile: (options) => {
+    console.log('[preload] selectFile called with options:', options);
+    return ipcRenderer.invoke('select-file', options);
+  },  listStudents: (payload) => ipcRenderer.invoke('list-students', payload),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (obj) => ipcRenderer.invoke('save-settings', obj),
   generateSelected: (payload) => ipcRenderer.invoke('generate-selected', payload),

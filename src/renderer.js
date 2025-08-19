@@ -11,7 +11,8 @@ function setProgress(v) {
   const p = el('progressBar'); if (p) p.style.width = `${Math.max(0, Math.min(100, v))}%`;
 }
 
-let hasCurrentFile = null;
+let scoresheetPath = null;
+let attendanceReportPath = null;
 let students = [];
 const selected = new Map();
 const languages = new Map();
@@ -22,6 +23,7 @@ let settingsLoadPromise = null;
 let cachedSettings = null;
 
 async function apiCall(method, ...args) {
+  console.log(`[apiCall] Calling ${method} with args:`, args); // Add this line
   try {
     if (!window.api?.[method]) {
       throw new Error(`API method ${method} not available`);
@@ -156,11 +158,123 @@ function setFileUI(hasFile) {
   }
 }
 
-async function selectFile() {
-  const chosen = await apiCall('selectFile');
+function setAttendanceFileUI(hasFile) {
+  const pick = el('btnPickAttendance');
+  const fileLabel = el('attendanceFileLabel');
+
+  if (!pick || !fileLabel) return;
+
+  if (!hasFile) {
+    pick.className = [
+      'w-full rounded-2xl',
+      'bg-gradient-to-r from-emerald-500 to-teal-600',
+      'text-white font-semibold',
+      'px-5 py-4 text-left',
+      'shadow-lg hover:shadow-xl hover:scale-[1.01]',
+      'ring-2 ring-emerald-300/60 focus:ring-4 focus:ring-emerald-300/70 focus:outline-none',
+      'transition',
+      'animate-pulse'
+    ].join(' ');
+    
+    pick.style.background = 'linear-gradient(to right, #059669, #0d9488)'; 
+    pick.style.color = 'white';
+    pick.style.fontWeight = 'bold';
+    pick.style.padding = '16px 20px';
+    pick.style.borderRadius = '16px';
+    pick.style.width = '100%';
+    pick.style.textAlign = 'left';
+    pick.style.border = 'none';
+    pick.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+    
+    pick.textContent = 'Select attendance report… (Optional)';
+    pick.setAttribute('aria-label', 'Select an attendance report');
+    fileLabel.textContent = 'No file selected';
+  } else {
+    pick.removeAttribute('style');
+    pick.style.cssText = '';
+    
+    pick.className = [
+      'w-full rounded-xl',
+      'border border-emerald-300',
+      'bg-white hover:bg-emerald-50',
+      'text-emerald-700 font-medium',
+      'px-4 py-2 text-left',
+      'focus:outline-none focus:ring-2 focus:ring-emerald-300',
+      'transition'
+    ].join(' ');
+    
+    pick.style.background = 'white';
+    pick.style.color = '#047857';
+    pick.style.border = '1px solid #6ee7b7';
+    pick.style.fontWeight = '500';
+    pick.style.padding = '8px 16px';
+    pick.style.borderRadius = '12px';
+    pick.style.width = '100%';
+    pick.style.textAlign = 'left';
+    
+    pick.textContent = 'Select different file';
+    pick.setAttribute('aria-label', 'Select a different attendance report');
+  }
+}
+
+function styleAttendanceHelpButton() {
+  setTimeout(() => {
+    const helpButton = el('btnAttendanceHelp');
+    if (helpButton) {
+      helpButton.className = [
+        'absolute right-2 top-1/2 -translate-y-1/2 z-10',
+        'h-8 w-8 grid place-items-center rounded-full',
+        'bg-white/90 text-emerald-700 ring-1 ring-emerald-300 shadow-sm',
+        'hover:bg-emerald-50 hover:ring-emerald-400 focus:outline-none',
+        'focus:ring-2 focus:ring-offset-2 focus:ring-emerald-400'
+      ].join(' ');
+      helpButton.innerHTML = '<span class="font-bold text-sm leading-none">?</span>';
+      
+      helpButton.style.cssText = '';
+    }
+    
+    const attendanceButton = el('btnPickAttendance');
+    if (attendanceButton) {
+      
+      attendanceButton.className = '';
+      
+      attendanceButton.className = [
+        'w-full rounded-2xl',
+        'bg-gradient-to-r from-emerald-500 to-teal-600',
+        'text-white font-semibold',
+        'px-5 py-4 text-left',
+        'shadow-lg hover:shadow-xl hover:scale-[1.01]',
+        'ring-2 ring-emerald-300/60 focus:ring-4 focus:ring-emerald-300/70 focus:outline-none',
+        'transition',
+        'animate-pulse'
+      ].join(' ');
+      
+      attendanceButton.textContent = 'Select attendance report… (Optional)';
+      
+      attendanceButton.style.background = 'linear-gradient(to right, rgb(16 185 129), rgb(20 184 166))';
+      attendanceButton.style.color = 'white';
+      attendanceButton.style.fontWeight = 'bold';
+      attendanceButton.style.padding = '16px 20px';
+      attendanceButton.style.borderRadius = '16px';
+      attendanceButton.style.width = '100%';
+      attendanceButton.style.textAlign = 'left';      
+    }
+  }, 200);
+}
+
+async function loadFile(fileTypes) {
+  console.log('[loadFile] Called with fileTypes:', fileTypes);
+  console.log('[loadFile] About to call apiCall with:', {dataTypes: fileTypes});
+  const result = await apiCall('selectFile', {dataTypes: fileTypes});
+  console.log('[loadFile] API result:', result);
+  return result;
+}
+
+async function selectFile(extensions = ['csv', 'xlsx']) {
+  const chosen = await loadFile(['csv', 'xlsx']);
 
   if (!chosen) {
-    hasCurrentFile = null;
+    scoresheetPath = null;
     students = [];
     selected.clear();
     languages.clear();
@@ -171,13 +285,13 @@ async function selectFile() {
     return;
   }
 
-  hasCurrentFile = chosen;
+  scoresheetPath = chosen;
   el('fileLabel').textContent = chosen;
   setStatus('Loading students…');
   setProgress(0);
 
   try {
-    students = await apiCall('listStudents', {inputPath: hasCurrentFile, settingsObj: getSettings()});
+    students = await apiCall('listStudents', {inputPath: scoresheetPath, settingsObj: getSettings()});
     students = students.map((s, i) => ({ ...s, __orig: i }));
     selected.clear();
     languages.clear();
@@ -192,8 +306,60 @@ async function selectFile() {
   }
 }
 
+async function selectAttendanceFile() {
+  try {
+    const chosen = await loadFile(['pdf']);
+  
+    if (!chosen) {
+      attendanceReportPath = null;
+      setAttendanceFileUI(false);
+      setStatus('Attendance file cleared');
+      return;
+    }
+  
+    attendanceReportPath = chosen;
+    el('attendanceFileLabel').textContent = chosen;
+    setStatus('Attendance file selected');
+    setAttendanceFileUI(true);
+  } catch (error) {
+    console.error('[selectAttendanceFile] Error:', error);
+    setStatus('Error selecting attendance file: ' + error.message);
+  }
+}
+
+function setAttendanceFileUI(hasFile) {
+  const pick = el('btnPickAttendance');
+  const fileLabel = el('attendanceFileLabel');
+
+  if (!pick || !fileLabel) return;
+
+  if (!hasFile) {
+    pick.className = [
+      'w-full rounded-xl border-2 border-dashed border-emerald-400',
+      'bg-emerald-50 hover:bg-emerald-100 px-4 py-2.5 pr-12',
+      'text-left text-emerald-700 font-medium',
+      'animate-pulse'
+    ].join(' ');
+    pick.textContent = 'Select attendance report… (Optional)';
+    pick.setAttribute('aria-label', 'Select an attendance report');
+    fileLabel.textContent = 'No file selected';
+  } else {
+    pick.className = [
+      'w-full rounded-xl',
+      'border border-emerald-300',
+      'bg-white hover:bg-emerald-50',
+      'text-emerald-700 font-medium',
+      'px-4 py-2.5 pr-12 text-left',
+      'focus:outline-none focus:ring-2 focus:ring-emerald-300',
+      'transition'
+    ].join(' ');
+    pick.textContent = 'Select different attendance file';
+    pick.setAttribute('aria-label', 'Select a different attendance report');
+  }
+}
+
 async function generateReports() {
-  if (!hasCurrentFile) {
+  if (!scoresheetPath) {
     console.warn('[generateReports] No file selected');
     setStatus('Pick a scoresheet first.');
     return;
@@ -209,9 +375,10 @@ async function generateReports() {
 
   try {
     await apiCall('generateSelected', {
-      inputPath: hasCurrentFile, 
+      inputPath: scoresheetPath, 
       selectionObj: selection, 
-      settingsObj: getSettings()
+      settingsObj: getSettings(),
+      attendancePath: attendanceReportPath
     });
     setStatus('Done. File saved to Downloads.');
     setProgress(100);
@@ -284,6 +451,99 @@ function initHelpModal() {
     if (e.key === 'Escape') close();
     if (e.key === 'ArrowLeft') show(i - 1);
     if (e.key === 'ArrowRight') show(i + 1);
+  });
+}
+
+function initAttendanceHelpModal() {
+  const openBtn = el('btnAttendanceHelp');
+  const modal = el('attendanceHelpModal');
+  const backdrop = modal ? modal.firstElementChild : null;
+  const closeBtn = el('attendanceHelpClose');
+  const prevBtn = el('attendanceHelpPrev');
+  const nextBtn = el('attendanceHelpNext');
+  const slides = Array.from(document.querySelectorAll('.attendance-help-slide'));
+  const pageIndicatorContainer = el('attendanceHelpDots');
+
+  if (!openBtn || !modal || !slides.length) {
+    console.warn('Attendance help modal elements not found');
+    return;
+  }
+
+  pageIndicatorContainer.innerHTML = slides.map((_, idx) =>
+    `<button data-idx="${idx}" class="h-2.5 w-2.5 rounded-full bg-slate-300"></button>`
+  ).join('');
+  const pageIndicatorDots = Array.from(pageIndicatorContainer.querySelectorAll('button'));
+
+  let currentSlide = 0;
+  
+  const showSlide = (slideIndex) => {
+    currentSlide = (slideIndex + slides.length) % slides.length;
+    
+    slides.forEach((slide, idx) => {
+      slide.classList.toggle('hidden', idx !== currentSlide);
+    });
+    
+    pageIndicatorDots.forEach((dot, idx) => {
+      dot.classList.toggle('bg-emerald-600', idx === currentSlide);
+      dot.classList.toggle('bg-slate-300', idx !== currentSlide);
+    });
+  };
+
+  const openModal = () => { 
+    modal.classList.remove('hidden'); 
+    showSlide(currentSlide); 
+  };
+  
+  const closeModal = () => { 
+    modal.classList.add('hidden'); 
+  };
+
+  openBtn.addEventListener('click', (e) => { 
+    e.stopPropagation(); 
+    openModal(); 
+  });
+  
+  closeBtn?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', closeModal);
+  prevBtn?.addEventListener('click', () => showSlide(currentSlide - 1));
+  nextBtn?.addEventListener('click', () => showSlide(currentSlide + 1));
+  
+  pageIndicatorContainer.addEventListener('click', (e) => {
+    const button = e.target.closest('button[data-idx]');
+    if (button) {
+      showSlide(parseInt(button.dataset.idx, 10));
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (modal.classList.contains('hidden')) return;
+    
+    if (e.key === 'Escape') closeModal();
+    if (e.key === 'ArrowLeft') showSlide(currentSlide - 1);
+    if (e.key === 'ArrowRight') showSlide(currentSlide + 1);
+  });
+}
+
+function initTabSwitching() {
+  const tabScoresheet = el('tabScoresheet');
+  const tabAttendance = el('tabAttendance');
+  const scoresheetContent = el('scoresheetContent');
+  const attendanceContent = el('attendanceContent');
+
+  tabScoresheet.addEventListener('click', function() {
+    tabScoresheet.className = 'px-2 py-1 text-xs font-medium rounded transition-colors bg-white text-slate-900 shadow-sm';
+    tabAttendance.className = 'px-2 py-1 text-xs font-medium rounded transition-colors text-slate-600 hover:text-slate-900';
+    
+    scoresheetContent.classList.remove('hidden');
+    attendanceContent.classList.add('hidden');
+  });
+
+  tabAttendance.addEventListener('click', function() {
+    tabAttendance.className = 'px-2 py-1 text-xs font-medium rounded transition-colors bg-white text-slate-900 shadow-sm';
+    tabScoresheet.className = 'px-2 py-1 text-xs font-medium rounded transition-colors text-slate-600 hover:text-slate-900';
+    
+    attendanceContent.classList.remove('hidden');
+    scoresheetContent.classList.add('hidden');
   });
 }
 
@@ -471,6 +731,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   setFileUI(false);
+  setAttendanceFileUI(false);
+  initTabSwitching();
+  styleAttendanceHelpButton();
+
   el('editModal')?.classList.add('hidden');
   students.forEach(s => selected.set(s.name, true));
   el('selectAll').checked = false;
@@ -486,6 +750,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') showModal(false); });
 
   el('btnPick').addEventListener('click', selectFile);
+  el('btnPickAttendance')?.addEventListener('click', selectAttendanceFile);
   el('btnGenerateSelected').addEventListener('click', generateReports);
   
   el('selectAll').addEventListener('change', (e) => {
@@ -510,6 +775,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.api?.onProgress?.(({ value }) => setProgress(value));
 
   initHelpModal();
+  initAttendanceHelpModal();
 });
 
 el('btnUploadLogo')?.addEventListener('click', async () => {

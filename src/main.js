@@ -358,13 +358,26 @@ function settingsPath() {
   return path.join(app.getPath('userData'), 'user.settings.json');
 }
 
-ipcMain.handle('select-file', async () => {
-  console.log('[main] ipc: select-file');
+ipcMain.handle('select-file', async (event, options = {}) => {
+  console.log('[main] ipc: select-file', options);
+  
+  let filters = [{ name: 'Spreadsheets', extensions: ['xlsx', 'csv'] }];
+  let title = 'Select scoresheet';
+  
+  if (options.dataTypes) {
+    if (options.dataTypes.includes('pdf')) {
+      console.log("[main] Selecting PDF file type");
+      filters = [{ name: 'PDF Documents', extensions: ['pdf'] }];
+      title = 'Select attendance report';
+    }
+  }
+  
   const res = await dialog.showOpenDialog(win, {
-    title: 'Select scoresheet',
-    filters: [{ name: 'Spreadsheets', extensions: ['xlsx', 'csv'] }],
+    title: title,
+    filters: filters,
     properties: ['openFile'],
   });
+  
   console.log('[main] dialog result:', res);
   if (res.canceled || !res.filePaths?.[0]) return null;
   return res.filePaths[0];

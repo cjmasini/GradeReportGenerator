@@ -33,7 +33,7 @@ def list_students_cmd(input_path: str, settings: Settings):
     ]
     emit("students", items=items)
 
-def generate_selected_cmd(input_path: str, selection_json: str, settings: Settings, output_path: str):
+def generate_selected_cmd(scoresheet_path: str, selection_json: str, settings: Settings, output_path: str, attendance_path = ""):
     try:
         with open(selection_json, "r", encoding="utf-8") as f:
             sel = json.load(f)
@@ -44,7 +44,7 @@ def generate_selected_cmd(input_path: str, selection_json: str, settings: Settin
     selected_map: Dict[str, bool] = sel.get("selected", {})
     lang_map: Dict[str, str] = sel.get("languages", {})
 
-    students = parse_students(input_path, settings)
+    students = parse_students(scoresheet_path, settings)
     pairs: List[Tuple] = []
     for s in students:
         if selected_map.get(s.name, False):
@@ -74,6 +74,7 @@ def main():
     gen_sel.add_argument("--input", required=True)
     gen_sel.add_argument("--selection", required=True)
     gen_sel.add_argument("--output-dir", default="")
+    gen_sel.add_argument("--attendance", default="")
 
     args = parser.parse_args()
     settings = Settings.load_from_file(filepath=args.settings) if args.settings else Settings.load_from_file()
@@ -82,7 +83,7 @@ def main():
         list_students_cmd(args.input, settings)
         return
     if args.cmd == "generate-selected":
-        sys.exit(generate_selected_cmd(args.input, args.selection, settings, args.output_dir))
+        sys.exit(generate_selected_cmd(args.input, args.selection, settings, args.output_dir, args.attendance))
         return
 
 if __name__ == "__main__":

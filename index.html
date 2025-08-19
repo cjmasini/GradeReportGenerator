@@ -38,33 +38,72 @@
         </div>
       </div>
 
-<div class="space-y-4">
-  <div class="text-sm font-medium">Scoresheet</div>
+      <!-- Upload Reports Section with Tabs -->
+      <div class="space-y-2">
+        <!-- Compact header with inline tabs -->
+        <div class="flex items-center justify-between">
+          <div class="text-sm font-medium">Upload Reports</div>
+          <div class="flex rounded-md bg-slate-100 p-0.5">
+            <button id="tabScoresheet" 
+                    class="px-2 py-1 text-xs font-medium rounded transition-colors bg-white text-slate-900 shadow-sm">
+              Scoresheet<span class="ml-1 text-red-500">*</span>
+            </button>
+            <button id="tabAttendance" 
+                    class="px-2 py-1 text-xs font-medium rounded transition-colors text-slate-600 hover:text-slate-900">
+              Attendance
+            </button>
+          </div>
+        </div>
 
-  <!-- wrapper so the help button can be positioned over the picker -->
-  <div class="relative">
-    <!-- keep ID and markup exactly as your app expects -->
-    <button id="btnPick"
-            class="w-full rounded-xl border-2 border-dashed border-indigo-400
-                   bg-indigo-50 hover:bg-indigo-100 px-4 py-3 pr-12
-                   text-left text-indigo-700 font-medium animate-pulse">
-      Select a scoresheet…
-    </button>
+        <!-- Scoresheet Tab Content -->
+        <div id="scoresheetContent" class="space-y-2">
+          <!-- wrapper so the help button can be positioned over the picker -->
+          <div class="relative">
+            <!-- keep ID and markup exactly as your app expects -->
+            <button id="btnPick"
+                    class="w-full rounded-xl border-2 border-dashed border-indigo-400
+                           bg-indigo-50 hover:bg-indigo-100 px-4 py-2.5 pr-12
+                           text-left text-indigo-700 font-medium animate-pulse">
+              Select a scoresheet…
+            </button>
 
-    <!-- separate sibling: won’t be wiped by innerHTML changes -->
-    <button id="btnScoreHelp" type="button" title="How to get your scoresheet"
-            class="absolute right-2 top-1/2 -translate-y-1/2 z-10
-                   h-9 w-9 grid place-items-center rounded-full
-                   bg-white/90 text-indigo-700 ring-1 ring-indigo-300 shadow-sm
-                   hover:bg-indigo-50 hover:ring-indigo-400 focus:outline-none
-                   focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400">
-      <span class="font-bold text-lg leading-none">?</span>
-    </button>
-  </div>
+            <!-- separate sibling: won't be wiped by innerHTML changes -->
+            <button id="btnScoreHelp" type="button" title="How to get your scoresheet"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 z-10
+                           h-8 w-8 grid place-items-center rounded-full
+                           bg-white/90 text-indigo-700 ring-1 ring-indigo-300 shadow-sm
+                           hover:bg-indigo-50 hover:ring-indigo-400 focus:outline-none
+                           focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400">
+              <span class="font-bold text-sm leading-none">?</span>
+            </button>
+          </div>
 
-  <div id="fileLabel" class="text-xs text-slate-500 break-all">No file selected</div>
-</div>
+          <div id="fileLabel" class="text-xs text-slate-500 break-all">No file selected</div>
+        </div>
 
+        <!-- Attendance Tab Content (hidden by default) -->
+        <div id="attendanceContent" class="space-y-2 hidden">
+          <div class="relative">
+            <button id="btnPickAttendance"
+                    class="w-full rounded-xl border-2 border-dashed border-emerald-400
+                           bg-emerald-50 hover:bg-emerald-100 px-4 py-2.5 pr-12
+                           text-left text-emerald-700 font-medium">
+              Select attendance report… (Optional)
+            </button>
+
+            <button id="btnAttendanceHelp" type="button" title="How to get your attendance report"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 z-10
+                           h-8 w-8 grid place-items-center rounded-full
+                           bg-white/90 text-emerald-700 ring-1 ring-emerald-300 shadow-sm
+                           hover:bg-emerald-50 hover:ring-emerald-400 focus:outline-none
+                           focus:ring-2 focus:ring-offset-2 focus:ring-emerald-400">
+              <span class="font-bold text-sm leading-none">?</span>
+            </button>
+          </div>
+
+          <div id="attendanceFileLabel" class="text-xs text-slate-500 break-all">No file selected</div>
+        </div>
+      </div>
 
       <div class="space-y-3">
         <div class="flex items-center justify-between mb-2">
@@ -117,7 +156,7 @@
           </div>
           <div class="flex items-center gap-2">
             <label class="text-sm text-slate-600">
-              Grade &le;
+              Grade ≤
               <input id="gradeCutoff" type="text" class="ml-1 w-16 rounded-lg border border-slate-300 px-2 py-1 text-sm">
             </label>
             <button id="btnApplyGradeFilter" class="rounded-lg bg-slate-200 hover:bg-slate-300 px-2 py-1 text-xs">
@@ -246,13 +285,12 @@
     </div>
   </div>
 </div>
+
 <div id="scoresheetHelpModal" class="fixed inset-0 z-[60] hidden">
   <!-- Backdrop -->
   <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
 
-  <!-- Modal shell -->
   <div class="relative mx-auto mt-[4vh] h-[92vh] w-[min(1100px,95vw)] rounded-2xl bg-white shadow-2xl overflow-hidden flex flex-col">
-    <!-- Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b">
       <div class="flex items-center gap-3">
         <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-600 text-white font-bold">?</span>
@@ -261,9 +299,7 @@
       <button id="helpClose" class="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100">✕</button>
     </div>
 
-    <!-- Slides area -->
     <div class="relative flex-1 bg-slate-50">
-      <!-- Left / Right arrows -->
       <button id="helpPrev"
               class="absolute left-3 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 shadow-md ring-1 ring-slate-200 hover:bg-white focus:outline-none flex items-center justify-center">
         <svg viewBox="0 0 24 24" class="w-7 h-7 text-indigo-700" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
@@ -273,7 +309,6 @@
         <svg viewBox="0 0 24 24" class="w-7 h-7 text-indigo-700" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
       </button>
 
-      <!-- Slides (top instructions + big image) -->
       <div id="helpSlides" class="h-full">
       <!-- Slide 1 -->
       <section class="help-slide h-full w-full flex flex-col">
@@ -363,6 +398,103 @@
 
       <!-- Dots -->
       <div id="helpDots" class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2"></div>
+    </div>
+  </div>
+</div>
+
+<div id="attendanceHelpModal" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+
+  <div class="relative mx-auto mt-[4vh] h-[92vh] w-[min(1100px,95vw)] rounded-2xl bg-white shadow-2xl overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <div class="flex items-center gap-3">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold">?</span>
+        <h2 class="text-lg font-semibold">How to get your Attendance Report file</h2>
+      </div>
+      <button id="attendanceHelpClose" class="rounded-md px-2 py-1 text-slate-600 hover:bg-slate-100">✕</button>
+    </div>
+
+    <div class="relative flex-1 bg-slate-50">
+      <button id="attendanceHelpPrev"
+              class="absolute left-3 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 shadow-md ring-1 ring-slate-200 hover:bg-white focus:outline-none flex items-center justify-center">
+        <svg viewBox="0 0 24 24" class="w-7 h-7 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <button id="attendanceHelpNext"
+              class="absolute right-3 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 shadow-md ring-1 ring-slate-200 hover:bg-white focus:outline-none flex items-center justify-center">
+        <svg viewBox="0 0 24 24" class="w-7 h-7 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <div id="attendanceHelpSlides" class="h-full">
+        <!-- Slide 1 -->
+        <section class="attendance-help-slide h-full w-full flex flex-col">
+          <div class="px-6 py-4 bg-white border-b">
+            <h3 class="font-medium">1) Open PowerTeacher SIS → Click <span class="text-emerald-700">Reports</span></h3>
+          </div>
+          <div class="flex-1 flex items-center justify-center p-4">
+            <div class="pb-6">
+              <img
+                src="./assets/help/attendance1.png"
+                class="max-h-[60vh] max-w-full object-contain mx-auto rounded-lg shadow-lg"
+                alt="Open Reports"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+              />
+            </div>
+          </div>
+        </section>
+
+        <!-- Slide 2 -->
+        <section class="attendance-help-slide h-full w-full flex flex-col">
+          <div class="px-6 py-4 bg-white border-b">
+            <h3 class="font-medium">2) Select <span class="text-emerald-700">Class Attendance Audit</span> → Optional: Supply date range → Submit</h3>
+          </div>
+          <div class="flex-1 flex items-center justify-center p-4">
+            <div class="pb-6">
+              <img
+                src="./assets/help/attendance2.png"
+                class="max-h-[60vh] max-w-full object-contain mx-auto rounded-lg shadow-lg"
+                alt="Select Date Range and Submit"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+              />
+            </div>
+          </div>
+        </section>
+
+        <!-- Slide 3 -->
+        <section class="attendance-help-slide h-full w-full flex flex-col">
+          <div class="px-6 py-4 bg-white border-b">
+            <h3 class="font-medium">3) Refresh until report has <span class="text-red-700">completed</span> → View Report</h3>
+          </div>
+          <div class="flex-1 flex items-center justify-center p-4">
+            <div class="pb-6">
+              <img
+                src="./assets/help/attendance3.png"
+                class="max-h-[50vh] max-w-full object-contain mx-auto rounded-lg shadow-lg"
+                alt="Refresh until Report is Generated"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+              />
+            </div>
+          </div>
+        </section>
+
+        <!-- Slide 4 -->
+        <section class="attendance-help-slide h-full w-full flex flex-col">
+          <div class="px-6 py-4 bg-white border-b">
+            <h3 class="font-medium">4) Download Generated Report</h3>
+          </div>
+          <div class="flex-1 flex items-center justify-center p-4">
+            <div class="pb-6">
+              <img
+                src="./assets/help/attendance4.png"
+                class="max-h-[30vh] max-w-full object-contain mx-auto rounded-lg shadow-lg"
+                alt="Download Attendance Report"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div id="attendanceHelpDots" class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2"></div>
     </div>
   </div>
 </div>

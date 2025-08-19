@@ -55,7 +55,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/app-icon.ico",
@@ -84,7 +86,7 @@
     }
   },
   "dependencies": {
-    "electron-updater": "^6.1.7"
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "electron": "^31.7.7",
