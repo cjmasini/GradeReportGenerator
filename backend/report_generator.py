@@ -13,9 +13,11 @@ from docx import Document
 from docx.shared import Inches, Pt
 from xlsx2csv import Xlsx2csv
 
+from .attendance import parse_attendance_data
 from .logo import create_logo_image
-from .student import Student
+from .attendanceData import AttendanceData
 from .letter import LetterWriter
+from .student import Student
 
 log = logging.getLogger(__name__)
 
@@ -106,7 +108,7 @@ def setup_document(settings, output_dir: str) -> Document:
 
     return doc
 
-def parse_students(input_file: str, settings, apply_cutoff: bool = True):
+def parse_students(input_file: str, settings):
     data = open_file(input_file)
 
     students = []
@@ -117,13 +119,14 @@ def parse_students(input_file: str, settings, apply_cutoff: bool = True):
         students.append(student)
     return students
 
-def generate_report_for_language(doc: Document, students: List[Student], settings, language: str, on_progress: ProgressFn, is_last: bool = True):
+def generate_report_for_language(doc: Document, students: List[Student], settings, language: str, on_progress: ProgressFn, is_last: bool = True, attendance_data: List[Tuple[str, AttendanceData]] = None):
     progress(on_progress, 10)
     writer = LetterWriter(
         settings.teacher_name,
         settings.teacher_email,
         language,
         settings.custom_message,
+        attendance_data,
         _ProgressAdapter(on_progress)
     )
 
@@ -167,13 +170,15 @@ def generate_report_for_selected(
     settings,
     student_language_pairs: List[Tuple[Student, str]],
     output_dir: Optional[str] = None,
-    on_progress: ProgressFn = None
+    on_progress: ProgressFn = None,
+    attendance_path: str = ""
 ) -> str:
     progress(on_progress, 0)
     language_grouped_students = defaultdict(list)
     for student, language in student_language_pairs:
         language_grouped_students[language].append(student)
 
+    attendance_data = parse_attendance_data(attendance_path)
     doc = setup_document(settings, output_dir)
 
     total = sum(len(v) for v in language_grouped_students.values()) or 1
@@ -182,7 +187,7 @@ def generate_report_for_selected(
     languages = list(language_grouped_students.keys())
     for idx, (language, students) in enumerate(language_grouped_students.items()):
         empty = (idx == len(languages) - 1)
-        doc = generate_report_for_language(doc, students, settings, language, on_progress, empty)
+        doc = generate_report_for_language(doc, students, settings, language, on_progress, empty, attendance_data)
         done += len(students)
         progress(on_progress, int(100 * done / total))
 

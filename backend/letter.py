@@ -1,4 +1,6 @@
-from typing import Callable, Optional
+from typing import Callable, List, Optional, Tuple
+
+from .attendanceData import AttendanceData
 from .translate import translate
 from .util import sanitize_input
 from .student import Student
@@ -7,16 +9,20 @@ ProgressFn = Optional[Callable[[int], None]]
 
 
 class LetterWriter:
-    def __init__(self, name, email, language, custom_message, progress_cb: ProgressFn = None):
+    def __init__(self, name, email, language, custom_message, attendanceData: List[Tuple[str, AttendanceData]], progress_cb: ProgressFn = None):
         self.teacher_name = sanitize_input(name)
         self.teacher_email = sanitize_input(email)
         self.language = sanitize_input(language)
         self.custom_message = sanitize_input(custom_message)
         self.should_translate = True
+        self.attendance_data = attendanceData
         self._progress = progress_cb or (lambda _p: None)
 
         self.message = "To the Parent/Guardian of {},\n"
-        self.message += "\tThis letter is to let you know that {} currently has a grade of {} ({}) in their {} class and has {} missing assignments. "
+        if len(self.attendance_data) > 0:
+            self.message += "\tThis letter is to let you know that {} currently has a grade of {} ({}) in their {} class and has {} missing assignments, {} tardies, and {} absences. "
+        else:
+            self.message += "\tThis letter is to let you know that {} currently has a grade of {} ({}) in their {} class and has {} missing assignments. "
         self.message += custom_message + " "
         self.message += "If you have any questions or concerns, please do not hesitate to contact me at {}\n\n"
 
@@ -38,10 +44,17 @@ class LetterWriter:
             self.translated_message += "\t" + translate("This letter is to let you know that", language) + f" {ltr}{{}}{pdf} "
             self._progress(30)
             self.translated_message += translate("currently has a grade of", language) + f" {ltr}{{}} ({{}}){pdf} "
-            self.translated_message += translate("in their", language) + f" {ltr}{{}}{pdf} "
+            self.translated_message += translate("in their", language).lower() + f" {ltr}{{}}{pdf} "
             self._progress(40)
             self.translated_message += translate("class and has", language) + f" {ltr}{{}}{pdf} "
-            self.translated_message += translate("missing assignments", language) + ". "
+            if len(self.attendance_data) > 0:
+                self.translated_message += translate("missing assignments", language).lower() + f", {ltr}{{}}{pdf} "
+                self.translated_message += translate("tardies", language).lower() + ", "
+                self.translated_message += translate("and", language).lower() + f" {ltr}{{}}{pdf} "
+                self.translated_message += translate("absences", language).lower()
+            else:
+                self.translated_message += translate("missing assignments", language)
+            self.translated_message += ". "
             self._progress(50)
             self.translated_message += translate(custom_message, language) + " "
             self.translated_message += translate(
@@ -65,25 +78,55 @@ class LetterWriter:
             self.forms += "Date: _______________________________\n\n"
 
     def generate_letter(self, student: Student):
-        text = self.message.format(
-            student.name,
-            student.first_name,
-            student.percent,
-            student.grade,
-            student.subject,
-            len(student.missing_assignments),
-            self.teacher_email
-        )
-
-        if self.should_translate:
-            text += self.translated_message.format(
+        text = ""
+        if len(self.attendance_data) > 0 and student.name in self.attendance_data:
+            tardies = self.attendance_data[student.name].tardies
+            absences = self.attendance_data[student.name].absences
+            text = self.message.format(
                 student.name,
                 student.first_name,
                 student.percent,
                 student.grade,
                 student.subject,
-                len(student.missing_assignments)
+                len(student.missing_assignments),
+                tardies,
+                absences,
+                self.teacher_email
             )
+        else:
+            text = self.message.format(
+                student.name,
+                student.first_name,
+                student.percent,
+                student.grade,
+                student.subject,
+                len(student.missing_assignments),
+                self.teacher_email
+            )
+
+        if self.should_translate:
+            if len(self.attendance_data) > 0 and student.name in self.attendance_data:
+                tardies = self.attendance_data[student.name].tardies
+                absences = self.attendance_data[student.name].absences
+                text += self.translated_message.format(
+                    student.name,
+                    student.first_name,
+                    student.percent,
+                    student.grade,
+                    student.subject,
+                    len(student.missing_assignments),
+                    tardies,
+                    absences
+                )
+            else:
+                text += self.translated_message.format(
+                    student.name,
+                    student.first_name,
+                    student.percent,
+                    student.grade,
+                    student.subject,
+                    len(student.missing_assignments),
+                )
 
         if len(student.missing_assignments) > 0:
             text += self.missing_assignments_text

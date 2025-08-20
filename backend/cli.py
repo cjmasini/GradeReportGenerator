@@ -58,6 +58,7 @@ def generate_selected_cmd(scoresheet_path: str, selection_json: str, settings: S
         student_language_pairs=pairs,
         output_dir=None,
         on_progress=progress_cb,
+        attendance_path=attendance_path
     )
     emit("done", output=output_path)
     return 0
