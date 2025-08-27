@@ -6,7 +6,7 @@ import tempfile
 import webbrowser
 from collections import defaultdict
 from pathlib import Path
-from typing import List, Tuple, Callable, Optional
+from typing import List, Callable, Optional, Dict, Tuple
 
 import docx
 from docx import Document
@@ -119,7 +119,7 @@ def parse_students(input_file: str, settings):
         students.append(student)
     return students
 
-def generate_report_for_language(doc: Document, students: List[Student], settings, language: str, on_progress: ProgressFn, is_last: bool = True, attendance_data: List[Tuple[str, AttendanceData]] = None):
+def generate_report_for_language(doc: Document, students: List[Student], settings, language: str, on_progress: ProgressFn, is_last: bool = True, attendance_data: Dict[str, AttendanceData] = {None}):
     progress(on_progress, 10)
     writer = LetterWriter(
         settings.teacher_name,

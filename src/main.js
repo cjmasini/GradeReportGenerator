@@ -420,8 +420,9 @@ ipcMain.handle('save-settings', async (_evt, obj) => {
   } catch (e) { return { ok: false, error: String(e) }; }
 });
 
-ipcMain.handle('generate-selected', async (_evt, { inputPath, selectionObj, settingsObj }) => {
+ipcMain.handle('generate-selected', async (_evt, { inputPath, selectionObj, settingsObj, attendancePath }) => {
   console.log('[main] ipc: generate-selected', inputPath);
+  console.log('[main] ipc: generate-selected', attendancePath);
   const tmpPath = path.join(app.getPath('temp'), `selection_${Date.now()}.json`);
   fs.writeFileSync(tmpPath, JSON.stringify(selectionObj, null, 2), 'utf-8');
   tempFiles.add(tmpPath);
@@ -430,7 +431,7 @@ ipcMain.handle('generate-selected', async (_evt, { inputPath, selectionObj, sett
     let progress = 0;
     const settingsFile = writeTempJson(settingsObj, 'settings');
     runBackend(
-     ['--settings', settingsFile, 'generate-selected', '--input', inputPath, '--selection', tmpPath, '--output-dir', app.getPath('userData')],
+     ['--settings', settingsFile, 'generate-selected', '--input', inputPath, '--selection', tmpPath, '--output-dir', app.getPath('userData'), '--attendance', attendancePath || '' ],
       (msg) => {
         console.log('[main] cli msg:', msg);
         if (msg.type === 'progress') {

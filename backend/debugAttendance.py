@@ -1,7 +1,6 @@
 import re
 from typing import Dict, List, Tuple
 import PyPDF2
-from .util import normalize_name
 
 # Try to import AttendanceData, handle both relative and direct imports
 try:
@@ -60,8 +59,6 @@ def split_name_and_codes(line: str) -> Tuple[str, List[str]]:
 
     # Name is everything before the first number, cleaned up
     name = re.sub(r'\d+$', '', s[:first_num_start].strip()).rstrip(",")
-    # Convert name from Last, First to First Last
-    name = normalize_name(name)
 
     # Codes live after the last number
     tail = s[last_num_end:].strip()
@@ -113,21 +110,38 @@ def is_section_header_or_total(line: str) -> bool:
     
     return False
 
-def parse_text_to_map(text: str) -> Dict[str, AttendanceData]:
-    """Parse text to extract student attendance data."""
+def simple_debug_parse_text_to_map(text: str) -> Dict[str, AttendanceData]:
+    """Simplified debug version with safe loop logic."""
     lines = text.split('\n')
     student_data: Dict[str, AttendanceData] = {}
     
-    # Find all potential student lines (lines that start with numbers)
+    print(f"Processing {len(lines)} total lines")
+    
+    # First pass - find all potential student lines (lines that start with numbers)
     potential_student_lines = []
     for i, line in enumerate(lines):
         if re.match(r'^\d+\.\s+', line.strip()):
             potential_student_lines.append((i, line.strip()))
     
+    print(f"Found {len(potential_student_lines)} potential student lines")
+    
+    # Show first few potential student lines
+    print("\nFirst 10 potential student lines:")
+    for i, (line_num, line) in enumerate(potential_student_lines[:10]):
+        print(f"  {i+1}: Line {line_num}: {line[:70]}...")
+    
     # Process each potential student line
+    processed_count = 0
+    skipped_count = 0
+    
+    print(f"\n=== PROCESSING STUDENTS ===")
+    
     for line_num, line in potential_student_lines:
+        print(f"\nProcessing line {line_num}: {line[:50]}...")
+        
         # Look for continuation lines
         combined_line = line
+        continuation_lines = []
         
         # Check next few lines for continuations
         for j in range(line_num + 1, min(line_num + 6, len(lines))):
@@ -146,22 +160,52 @@ def parse_text_to_map(text: str) -> Dict[str, AttendanceData]:
                 re.search(r'\b(PFD|N/E|[PTHVAMS])\b', next_line)):
                 
                 combined_line += ' ' + next_line
+                continuation_lines.append(j)
+        
+        if continuation_lines:
+            print(f"  Found {len(continuation_lines)} continuation lines")
         
         # Parse the combined line
         student_name, attendance_tokens = split_name_and_codes(combined_line)
         
+        print(f"  Name: '{student_name}'")
+        print(f"  Codes: {attendance_tokens}")
+        
         if student_name and attendance_tokens:
+            processed_count += 1
             student_name = re.sub(r'\s+', ' ', student_name).strip()
             
             if student_name not in student_data:
                 student_data[student_name] = AttendanceData()
             for tk in attendance_tokens:
                 student_data[student_name].add_code(tk)
+            print(f"  + SUCCESS: Added student #{processed_count}")
+        else:
+            skipped_count += 1
+            print(f"  - SKIPPED: Missing name or codes")
+            
+            # Debug why it failed
+            if not student_name:
+                print(f"    - No name found")
+            if not attendance_tokens:
+                print(f"    - No attendance codes found")
+                
+            # Show the raw parsing attempt
+            print(f"    - Raw line after index removal: '{re.sub(r'^\s*\d+[.)]?\s*', '', combined_line).strip()}'")
+    
+    print(f"\n=== RESULTS ===")
+    print(f"Potential students found: {len(potential_student_lines)}")
+    print(f"Successfully processed: {processed_count}")  
+    print(f"Skipped due to parsing issues: {skipped_count}")
+    print(f"Final student count: {len(student_data)}")
+    
+    if skipped_count > 0:
+        print(f"\nWARNING: {skipped_count} students were skipped due to parsing failures")
     
     return student_data
 
-def parse_attendance_data(pdf_path: str) -> Dict[str, AttendanceData]:
-    """Parse attendance data from PDF file."""
+def debug_parse_attendance_data(pdf_path: str) -> Dict[str, AttendanceData]:
+    """Debug version with safe parsing."""
     if pdf_path == "":
         return {}
         
@@ -169,6 +213,7 @@ def parse_attendance_data(pdf_path: str) -> Dict[str, AttendanceData]:
         with open(pdf_path, 'rb') as f:
             reader = PyPDF2.PdfReader(f)
             full_text = ""
+            print(f"Reading {len(reader.pages)} pages from PDF...")
             
             for p in reader.pages:
                 t = p.extract_text()
@@ -178,7 +223,35 @@ def parse_attendance_data(pdf_path: str) -> Dict[str, AttendanceData]:
     except Exception as e:
         raise RuntimeError(f"Error reading PDF '{pdf_path}': {e}")
 
-    data_map = parse_text_to_map(full_text)
-    print(f"Parsed {len(data_map)} students from attendance PDF.")
+    # Look for total membership to validate
+    membership_matches = re.findall(r'Total Membership:\s*(\d+)', full_text)
+    if membership_matches:
+        expected_total = sum(int(m) for m in membership_matches)
+        print(f"PDF contains Total Membership values: {membership_matches}")
+        print(f"Expected total students: {expected_total}")
+
+    data_map = simple_debug_parse_text_to_map(full_text)
+    
+    print(f"\nFINAL RESULT: Parsed {len(data_map)} students from attendance PDF")
     
     return data_map
+
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) > 1:
+        pdf_path = sys.argv[1]
+        print(f"Processing PDF: {pdf_path}")
+        try:
+            results = debug_parse_attendance_data(pdf_path)
+            
+            print(f"\nFirst 5 students:")
+            for i, (name, data) in enumerate(list(results.items())[:5]):
+                print(f"  {i+1}. {name}: {data}")
+                
+        except Exception as e:
+            print(f"Error: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print("Usage: python script.py path_to_pdf.pdf")

@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Optional
 
 from .attendanceData import AttendanceData
 from .translate import translate
@@ -9,7 +9,7 @@ ProgressFn = Optional[Callable[[int], None]]
 
 
 class LetterWriter:
-    def __init__(self, name, email, language, custom_message, attendanceData: List[Tuple[str, AttendanceData]], progress_cb: ProgressFn = None):
+    def __init__(self, name, email, language, custom_message, attendanceData: dict[str, AttendanceData], progress_cb: ProgressFn = None):
         self.teacher_name = sanitize_input(name)
         self.teacher_email = sanitize_input(email)
         self.language = sanitize_input(language)
@@ -17,6 +17,8 @@ class LetterWriter:
         self.should_translate = True
         self.attendance_data = attendanceData
         self._progress = progress_cb or (lambda _p: None)
+        for line in self.attendance_data:
+            print(line)
 
         self.message = "To the Parent/Guardian of {},\n"
         if len(self.attendance_data) > 0:
@@ -79,9 +81,12 @@ class LetterWriter:
 
     def generate_letter(self, student: Student):
         text = ""
+        print(f"Generating letter for {student.name}...")
+        print(self.attendance_data[student.name])
         if len(self.attendance_data) > 0 and student.name in self.attendance_data:
-            tardies = self.attendance_data[student.name].tardies
-            absences = self.attendance_data[student.name].absences
+            print("Student found in attendance")
+            tardies = self.attendance_data[student.name].tardy
+            absences = self.attendance_data[student.name].absent
             text = self.message.format(
                 student.name,
                 student.first_name,
@@ -106,8 +111,8 @@ class LetterWriter:
 
         if self.should_translate:
             if len(self.attendance_data) > 0 and student.name in self.attendance_data:
-                tardies = self.attendance_data[student.name].tardies
-                absences = self.attendance_data[student.name].absences
+                tardies = self.attendance_data[student.name].tardy
+                absences = self.attendance_data[student.name].absent
                 text += self.translated_message.format(
                     student.name,
                     student.first_name,
