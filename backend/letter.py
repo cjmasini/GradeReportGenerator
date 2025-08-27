@@ -82,13 +82,11 @@ class LetterWriter:
     def generate_letter(self, student: Student):
         text = ""
         print(f"Generating letter for {student.name}...")
-        print(self.attendance_data[student.name])
         if len(self.attendance_data) > 0 and student.name in self.attendance_data:
-            print("Student found in attendance")
             tardies = self.attendance_data[student.name].tardy
             absences = self.attendance_data[student.name].absent
             text = self.message.format(
-                student.name,
+                student.display_name,
                 student.first_name,
                 student.percent,
                 student.grade,
@@ -100,7 +98,7 @@ class LetterWriter:
             )
         else:
             text = self.message.format(
-                student.name,
+                student.display_name,
                 student.first_name,
                 student.percent,
                 student.grade,
@@ -114,7 +112,7 @@ class LetterWriter:
                 tardies = self.attendance_data[student.name].tardy
                 absences = self.attendance_data[student.name].absent
                 text += self.translated_message.format(
-                    student.name,
+                    student.display_name,
                     student.first_name,
                     student.percent,
                     student.grade,
@@ -125,7 +123,7 @@ class LetterWriter:
                 )
             else:
                 text += self.translated_message.format(
-                    student.name,
+                    student.display_name,
                     student.first_name,
                     student.percent,
                     student.grade,
