@@ -179,6 +179,5 @@ def parse_attendance_data(pdf_path: str) -> Dict[str, AttendanceData]:
         raise RuntimeError(f"Error reading PDF '{pdf_path}': {e}")
 
     data_map = parse_text_to_map(full_text)
-    print(f"Parsed {len(data_map)} students from attendance PDF.")
     
     return data_map

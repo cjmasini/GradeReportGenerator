@@ -17,8 +17,6 @@ class LetterWriter:
         self.should_translate = True
         self.attendance_data = attendanceData
         self._progress = progress_cb or (lambda _p: None)
-        for line in self.attendance_data:
-            print(line)
 
         self.message = "To the Parent/Guardian of {},\n"
         if len(self.attendance_data) > 0:
@@ -81,7 +79,6 @@ class LetterWriter:
 
     def generate_letter(self, student: Student):
         text = ""
-        print(f"Generating letter for {student.name}...")
         if len(self.attendance_data) > 0 and student.name in self.attendance_data:
             tardies = self.attendance_data[student.name].tardy
             absences = self.attendance_data[student.name].absent
